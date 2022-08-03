@@ -1,0 +1,12 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://192.168.3.202:5432/customer
+    username: zbuser
+    password: password
+    pool:
+      max-size: 30
+
+server:
+  error:
+    include-binding-errors: always
+    include-message: always
