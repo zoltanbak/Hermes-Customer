@@ -2,6 +2,7 @@ package com.zb.hermes.customer.controller;
 
 import com.zb.hermes.customer.model.Customer;
 import com.zb.hermes.customer.repository.CustomerRepository;
+import com.zb.hermes.customer.service.CustomerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,24 +16,21 @@ import java.util.UUID;
 public class CustomerRestController {
 
     @Autowired
-    CustomerRepository customerRepository;
+    CustomerService customerService;
 
 
     @GetMapping("customers")
     public Flux<Customer> getAllCustomer() {
-        return customerRepository.findAll();
+        return customerService.findAll();
     }
 
     @GetMapping("search/findById")
     public Mono<Customer> findById(@RequestParam UUID id) {
-        return customerRepository.findById(id);
+        return customerService.findById(id);
     }
 
-    @PostMapping
+    @PostMapping("customers")
     public Mono<Customer> postCustomer(@RequestBody Customer customer) {
-        return customerRepository.save(
-                new Customer(customer.getFirstName(),
-                             customer.getLastName()));
+        return customerService.save(customer);
     }
-
 }
