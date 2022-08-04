@@ -1,7 +1,6 @@
 package com.zb.hermes.customer.controller;
 
 import com.zb.hermes.customer.model.Customer;
-import com.zb.hermes.customer.repository.CustomerRepository;
 import com.zb.hermes.customer.service.CustomerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "api/v1")
-@Slf4j
 public class CustomerRestController {
 
     @Autowired
