@@ -1,7 +1,21 @@
+buildscript {
+	ext {
+		springBootVersion = "2.7.2"
+		springDependencyManagementVersion = "1.0.12.RELEASE"
+		springCloudVersion = "2021.0.3"
+		protobufVersion = "3.19.4"
+		protobufPluginVersion = "0.8.18"
+		grpcVersion = "1.44.1"
+		springGrpcVersion = "2.13.1.RELEASE"
+	}
+}
+
 plugins {
-	id 'org.springframework.boot' version '2.7.2'
-	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+	id 'org.springframework.boot' version "${springBootVersion}"
+	id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
 	id 'java'
+	id 'com.google.protobuf' version "${protobufPluginVersion}"
+	id 'idea'
 }
 
 group = 'com.zb.hermes'
@@ -18,17 +32,41 @@ repositories {
 	mavenCentral()
 }
 
-ext {
-	set('springCloudVersion', "2021.0.3")
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:" + protobufVersion
+	}
+	clean {
+		delete protobuf.generatedFilesBaseDir
+	}
+	plugins {
+		grpc {
+			artifact = 'io.grpc:protoc-gen-grpc-java:' + grpcVersion
+		}
+	}
+	generateProtoTasks {
+		all()*.plugins {
+			grpc {}
+		}
+	}
 }
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+
+	implementation 'io.grpc:grpc-protobuf:' + grpcVersion
+	implementation 'io.grpc:grpc-stub:' + grpcVersion
+	implementation 'net.devh:grpc-server-spring-boot-starter:' + springGrpcVersion
+
+
 	compileOnly 'org.projectlombok:lombok'
+
 	runtimeOnly 'org.postgresql:postgresql'
 	runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
 	annotationProcessor 'org.projectlombok:lombok'
+
 }
 
 dependencyManagement {
@@ -40,3 +78,20 @@ dependencyManagement {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+protobuf {
+	generatedFilesBaseDir = "$projectDir/gen"
+}
+
+clean {
+	delete protobuf.generatedFilesBaseDir
+}
+
+//// If you have source imports issues, add the below
+//sourceSets.main.java.srcDir new File(buildDir, 'generated/source')
+//idea {
+//	module {
+//		// Marks the already(!) added srcDir as "generated"
+//		generatedSourceDirs += file('build/generated/source')
+//	}
+//}
