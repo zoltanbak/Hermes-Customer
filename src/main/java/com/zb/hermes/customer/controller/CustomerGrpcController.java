@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import zb.hermes.database.*;
 
@@ -25,7 +26,7 @@ public class CustomerGrpcController extends CustomerDatabaseServiceGrpc.Customer
         final String firstName = request.getFirstName();
         final String lastName = request.getLastName();
 
-        log.info("New CreateCustomerRequest with firstName: " + firstName + ", lastName: " + lastName);
+        log.debug("New CreateCustomerRequest received with firstName: " + firstName + ", lastName: " + lastName);
 
         Customer customer = Customer.
                 builder()
@@ -33,36 +34,79 @@ public class CustomerGrpcController extends CustomerDatabaseServiceGrpc.Customer
                 .lastName(request.getLastName())
                 .build();
 
-        // TODO: Check if the returning is the same
-        customerService.save(customer);
+        Mono<Customer> resultCustomer = customerService.save(customer);
 
-        log.info("CreateNewCustomerRequest onNext");
+        // TODO: Examines this. Have to subscribe to be actually written to the DB
+        resultCustomer.subscribe(
+                result -> {
+                    log.debug(result.toString());
+                }
+        );
+
+        log.debug("CreateNewCustomerRequest onNext");
         responseObserver.onNext(Empty.newBuilder().build());
-        log.info("CreateNewCustomerRequest onCompleted");
+        log.debug("CreateNewCustomerRequest onCompleted");
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void readAll(Empty request, StreamObserver<ReadCustomerResponse> responseObserver) {
+
+        log.info("New ReadAllRequest received");
+
+        Flux<Customer> customer = customerService.findAll();
+
+        customer.subscribe(
+                result -> {
+                    log.debug("ReadAllRequest onNext");
+                    responseObserver.onNext(ReadCustomerResponse.newBuilder()
+                            .setId(result.getId().toString())
+                            .setFirstName(result.getFirstName())
+                            .setLastName(result.getLastName())
+                            .setRegisteredOn(result.getRegisteredOn().toInstant(ZoneOffset.UTC).toEpochMilli())
+                            .build());
+                },
+                throwable -> {
+                    log.error("ReadCustomerRequest onError: " + throwable);
+                    responseObserver.onError(throwable);
+                },
+                () -> {
+                    log.debug("ReadAllRequest onCompleted");
+                    responseObserver.onCompleted();
+                }
+        );
+
+        log.debug("ReadAllRequest returns");
     }
 
     @Override
     public void read(ReadCustomerRequest request, StreamObserver<ReadCustomerResponse> responseObserver) {
         final String id = request.getId();
 
-        log.info("New ReadCustomerRequest with id: " + id);
+        log.info("New ReadCustomerRequest received with id: " + id);
 
         Mono<Customer> customer = customerService.findById(UUID.fromString(id));
 
         customer.subscribe(
-            result -> {
-                log.info("ReadCustomerRequest onNext");
-                responseObserver.onNext(ReadCustomerResponse.newBuilder()
-                        .setId(result.getId().toString())
-                        .setFirstName(result.getFirstName())
-                        .setLastName(result.getLastName())
-                        .setRegisteredOn(result.getRegisteredOn().toInstant(ZoneOffset.UTC).toEpochMilli())
-                        .build());
-
-                log.info("ReadCustomerRequest onCompleted");
-                responseObserver.onCompleted();
-            }
+                result -> {
+                    log.debug("ReadCustomerRequest onNext");
+                    responseObserver.onNext(ReadCustomerResponse.newBuilder()
+                            .setId(result.getId().toString())
+                            .setFirstName(result.getFirstName())
+                            .setLastName(result.getLastName())
+                            .setRegisteredOn(result.getRegisteredOn().toInstant(ZoneOffset.UTC).toEpochMilli())
+                            .build());
+                },
+                throwable -> {
+                    log.error("ReadCustomerRequest onError: " + throwable);
+                    responseObserver.onError(throwable);
+                },
+                () -> {
+                    log.debug("ReadCustomerRequest onCompleted");
+                    responseObserver.onCompleted();
+                }
         );
+
+        log.debug("ReadCustomerRequest returns");
     }
 }
